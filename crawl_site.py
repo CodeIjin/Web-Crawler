@@ -220,8 +220,7 @@ def interactive_browser_login(start_url, profile_dir=".browser_profile", save_co
         def disable_v8_debugger(target_page):
             try:
                 cdp = context.new_cdp_session(target_page)
-                cdp.send("Debugger.enable")
-                cdp.send("Debugger.setSkipAllPauses", {"skip": True})
+                cdp.send("Debugger.disable")
             except Exception:
                 pass
 
@@ -234,15 +233,38 @@ def interactive_browser_login(start_url, profile_dir=".browser_profile", save_co
         except Exception as e:
             print(f"[*] Navigating to {start_url}: {e}")
 
-        print("\n>>> Please complete your login in the browser window (Google sign-in, email/password, etc.).")
+        print("\n" + "-" * 70)
+        print(">>> Option A: Complete login in the opened browser, then press [ENTER].")
+        print(">>> Option B: If mkissa.to anti-bot blocks the Google popup, log into")
+        print("              mkissa.to in your normal browser, copy your cookies, and PASTE HERE:")
+        print("-" * 70)
+        user_input = ""
         try:
-            input(">>> When you are fully logged in, press [ENTER] here in the terminal to continue: ")
+            user_input = input(">>> Press [ENTER] when logged in (or paste cookie string): ").strip()
         except (EOFError, KeyboardInterrupt):
             pass
 
-        cookies = context.cookies()
-        context.storage_state(path="storage_state.json")
-        context.close()
+        if user_input and "=" in user_input:
+            cookies = []
+            parsed_host = urlparse(start_url).netloc.split(":")[0]
+            for item in user_input.split(";"):
+                item = item.strip()
+                if "=" in item:
+                    k, v = item.split("=", 1)
+                    cookies.append({
+                        "name": k.strip(),
+                        "value": v.strip(),
+                        "domain": parsed_host,
+                        "path": "/"
+                    })
+            try:
+                context.close()
+            except Exception:
+                pass
+        else:
+            cookies = context.cookies()
+            context.storage_state(path="storage_state.json")
+            context.close()
 
     if cookies:
         with open(save_cookies_file, "w", encoding="utf-8") as f:

@@ -194,9 +194,9 @@ def interactive_browser_login(start_url, profile_dir=".browser_profile", save_co
                     "viewport": {"width": 1280, "height": 820},
                     "args": [
                         "--disable-blink-features=AutomationControlled",
-                        "--no-sandbox",
                         "--disable-dev-shm-usage",
                         "--disable-infobars",
+                        "--disable-popup-blocking",
                     ],
                     "ignore_default_args": ["--enable-automation"],
                 }
@@ -213,16 +213,28 @@ def interactive_browser_login(start_url, profile_dir=".browser_profile", save_co
             print("[!] Failed to launch browser window.")
             return None
 
-        # Inject stealth & anti-debugger neutralization script
+        # Inject stealth script
         context.add_init_script(STEALTH_INIT_SCRIPT)
 
+        # Attach CDP to V8 engine to ignore all 'debugger;' traps and prevent tab freezing
+        def disable_v8_debugger(target_page):
+            try:
+                cdp = context.new_cdp_session(target_page)
+                cdp.send("Debugger.enable")
+                cdp.send("Debugger.setSkipAllPauses", {"skip": True})
+            except Exception:
+                pass
+
         page = context.pages[0] if context.pages else context.new_page()
+        disable_v8_debugger(page)
+        context.on("page", disable_v8_debugger)
+
         try:
             page.goto(start_url, wait_until="commit", timeout=45000)
         except Exception as e:
             print(f"[*] Navigating to {start_url}: {e}")
 
-        print("\n>>> Please complete your login in the browser window (Google sign-in, email, etc.).")
+        print("\n>>> Please complete your login in the browser window (Google sign-in, email/password, etc.).")
         try:
             input(">>> When you are fully logged in, press [ENTER] here in the terminal to continue: ")
         except (EOFError, KeyboardInterrupt):

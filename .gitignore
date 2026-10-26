@@ -1,0 +1,23 @@
+# Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Playwright
+playwright-report/
+test-results/
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

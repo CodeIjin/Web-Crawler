@@ -1,0 +1,12 @@
+page,rule,impact,wcag_criteria,description,instances,help_url
+https://quotes.toscrape.com/,color-contrast,serious,wcag143,Elements must meet minimum color contrast ratio thresholds,63,https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI
+https://quotes.toscrape.com/,link-in-text-block,serious,wcag141,Links must be distinguishable without relying on color,1,https://dequeuniversity.com/rules/axe/4.12/link-in-text-block?application=axeAPI
+https://quotes.toscrape.com/login,color-contrast,serious,wcag143,Elements must meet minimum color contrast ratio thresholds,4,https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI
+https://quotes.toscrape.com/login,label,critical,wcag412,Form elements must have labels,1,https://dequeuniversity.com/rules/axe/4.12/label?application=axeAPI
+https://quotes.toscrape.com/login,link-in-text-block,serious,wcag141,Links must be distinguishable without relying on color,1,https://dequeuniversity.com/rules/axe/4.12/link-in-text-block?application=axeAPI
+https://quotes.toscrape.com/author/Albert-Einstein,color-contrast,serious,wcag143,Elements must meet minimum color contrast ratio thresholds,3,https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI
+https://quotes.toscrape.com/author/Albert-Einstein,link-in-text-block,serious,wcag141,Links must be distinguishable without relying on color,1,https://dequeuniversity.com/rules/axe/4.12/link-in-text-block?application=axeAPI
+https://quotes.toscrape.com/tag/change/page/1,color-contrast,serious,wcag143,Elements must meet minimum color contrast ratio thresholds,19,https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI
+https://quotes.toscrape.com/tag/change/page/1,link-in-text-block,serious,wcag141,Links must be distinguishable without relying on color,1,https://dequeuniversity.com/rules/axe/4.12/link-in-text-block?application=axeAPI
+https://quotes.toscrape.com/tag/deep-thoughts/page/1,color-contrast,serious,wcag143,Elements must meet minimum color contrast ratio thresholds,19,https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI
+https://quotes.toscrape.com/tag/deep-thoughts/page/1,link-in-text-block,serious,wcag141,Links must be distinguishable without relying on color,1,https://dequeuniversity.com/rules/axe/4.12/link-in-text-block?application=axeAPI

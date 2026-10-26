@@ -7,7 +7,7 @@ https://mkissa.to/cases,1,200,MKissa â Quizzes,https://mkissa.to/,0,0
 https://mkissa.to/users,1,200,MKissa â Top Users,https://mkissa.to/,0,0
 https://mkissa.to/guides,1,200,,https://mkissa.to/,0,0
 https://mkissa.to/search/character,1,200,MKissa - Find Best or Top Anime/Manga Characters,https://mkissa.to/,3,0
-https://mkissa.to/auth/login?redirect=%2Fabouts%2Fhow-to,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/login?redirect=%2Fabouts%2Fhow-to,2,200,,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/collections,2,200,MKissa â Anime|Manga|Music Collections,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/collections?prefer=my,2,200,MKissa â Anime|Manga|Music Collections,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/tierlists,2,200,MKissa â Tier lists,https://mkissa.to/abouts/how-to,1,0
@@ -18,17 +18,17 @@ https://mkissa.to/cases/create?playKind=survey,2,200,,https://mkissa.to/abouts/h
 https://mkissa.to/guides/create,2,200,,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/forum,2,200,,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/forum?compose=1,2,200,,https://mkissa.to/abouts/how-to,0,0
-https://mkissa.to/auth/profile?tab=posts,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/profile?tab=posts,2,200,,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/search/anime?cty=ALL&tr=sub,2,200,,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/forum?board=sfboard000000000000000003,2,200,,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/abouts/contact,2,200,Contact â MKissa,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/ranking?slot=boostedMonthly&type=anime,2,200,MKissa â Most boosted Anime,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/games,2,200,MKissa â Games,https://mkissa.to/abouts/how-to,6,0
-https://mkissa.to/auth/profile?tab=edit,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
-https://mkissa.to/auth/friends,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
-https://mkissa.to/auth/profile?tab=frames,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/profile?tab=edit,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/friends,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/profile?tab=frames,2,200,,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/activities,2,200,MKissa â Recent activity,https://mkissa.to/abouts/how-to,0,0
-https://mkissa.to/auth/profile?tab=activity,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/profile?tab=activity,2,200,,https://mkissa.to/abouts/how-to,0,0
 https://mkissa.to/abouts/about,2,200,About â MKissa,https://mkissa.to/abouts/how-to,6,0
 https://mkissa.to/popular?range=1&type=anime,2,200,MKissa - Popular Anime,https://mkissa.to/anime?tr=sub,0,0
 https://mkissa.to/search/anime?cty=ALL&sortBy=Top&tr=sub,2,200,,https://mkissa.to/anime?tr=sub,0,0

@@ -47,7 +47,10 @@ A robust, two-stage Python pipeline that crawls an entire website (including all
 ### Stage 1: Full-Site Crawler (`crawl_site.py`)
 - **Complete Website Traversal**: Starts on the homepage, follows every internal link, and traverses all subdomains (e.g., `en.wikipedia.org`, `fr.wikipedia.org`, `blog.example.com`).
 - **Base Domain Discovery**: Automatically detects root domains (handling two-part TLDs like `.co.uk`, `.org.in`, `.com.au`).
-- **RFC 9309 `robots.txt` Compliance**: Caches `robots.txt` per host so each subdomain's rules are respected independently without blocking on 404s.
+- **RFC 9309 `robots.txt` Compliance & Bypass**: Caches `robots.txt` per host; provides `--ignore-robots` for crawling private authenticated routes (`/auth`, `/profile`, `/dashboard`).
+- **Authenticated & Login-Protected Crawling**: Supports session cookies (`--cookie`, `--cookies-file`), custom auth headers (`--header`), or interactive one-time browser login (`--login`).
+- **Session Logout Protection**: Automatically detects and skips `/logout`, `/signout`, and account deletion links so your authenticated crawl never terminates prematurely.
+- **Automatic Session Persistence**: Captures sessions to `cookies.json` and `storage_state.json` and automatically reuses them on future crawl and audit runs.
 - **URL Normalization**: Strips `#fragments` and tracking query parameters (`utm_source`, `utm_medium`, `fbclid`, `gclid`, etc.) to eliminate duplicate crawl loops.
 - **Sitemap Support**: Automatically inspects `sitemap.xml` and sitemap indexes to find unlinked orphan pages.
 - **Flexible Controls**: Configurable request delay, optional page limit caps, or `--unlimited` traversal mode.
@@ -131,31 +134,44 @@ python crawl_site.py https://blog.example.com 100 --exact-domain
 
 #### Example 5: Authenticated Crawling (Login-Protected Websites)
 
-##### Option A: Interactive One-Time Browser Login (Zero Manual Copy-Paste)
-Run with `--login`. A real Chromium browser window will open automatically. Log in to your account normally (handling any 2FA, OAuth, or CAPTCHAs). When logged in, press **Enter** in the terminal:
+To crawl private sections of a site (e.g., user profiles, member areas, or `/auth` routes), use one of the following methods:
+
+##### Method 1: Using Cookies from Your Regular Browser (Recommended for Protected Sites)
+Sites with aggressive anti-bot protections or Google OAuth (like `mkissa.to`) often block automated test browsers from opening sign-in popups. The simplest, 100% reliable method is to grab your session cookie from your normal browser:
+
+1. Open your regular Google Chrome browser and log into the site.
+2. Press **`F12`** to open DevTools, select the **Console** tab, and run:
+   ```javascript
+   document.cookie
+   ```
+3. Copy the returned string and pass it to the crawler with `--ignore-robots`:
+   ```bash
+   python crawl_site.py https://mkissa.to/ 50 --cookie "session_token=abc123xyz..." --ignore-robots
+   ```
+   *(Or save the cookie string into a `cookies.json` file once, and the crawler will auto-detect and reuse it on all future runs).*
+
+##### Method 2: One-Time Interactive Browser Login (`--login`)
+Launches a real Chrome window via Playwright with automation masking:
 
 ```bash
-# Log in once interactively; crawl starts immediately upon pressing Enter
 python crawl_site.py https://example.com 100 --login
 ```
-* **Auto-Session Reuse:** The crawler automatically saves your session to `cookies.json` and `storage_state.json`.
-* **Future Runs:** On subsequent runs, you don't even need `--login`; the crawler and scanner auto-detect and reuse the saved session without asking:
+* **Interactive Terminal Prompt:** Complete your login in the browser and press **`[ENTER]`** in your terminal. If the site's anti-bot blocks OAuth popups, the prompt also allows you to simply paste your cookie string directly.
+* **Auto-Session Reuse:** Automatically saves credentials to `cookies.json` and `storage_state.json`.
+* **Future Runs:** On all future runs, you don't need `--login`; the crawler and scanner auto-detect and reuse the saved session without asking:
   ```bash
   python crawl_site.py https://example.com 100
   ```
 
-##### Option B: Provide Cookies or Headers Manually
+##### Method 3: Custom Headers & Bearer Tokens (`--header`)
+For APIs or single-page apps using JWT or API keys:
 ```bash
-# Using raw cookie string:
-python crawl_site.py https://example.com 100 --cookie "sessionid=abc123; user_id=456" --ignore-robots
-
-# Using cookies exported to a JSON file (from Cookie-Editor / EditThisCookie extension):
-python crawl_site.py https://example.com 100 --cookies-file cookies.json --ignore-robots
-
-# Adding custom auth headers (e.g. Bearer tokens):
-python crawl_site.py https://example.com 100 --header "Authorization: Bearer mytoken" --ignore-robots
+python crawl_site.py https://example.com 100 --header "Authorization: Bearer <your_token>" --ignore-robots
 ```
-> **Safety Note:** The crawler automatically filters out logout links (`/logout`, `/signout`, `auth/logout`) and account-destructive links (`/delete`, `/remove`) to keep your session alive and safe during the crawl.
+
+> **Why `--ignore-robots`?** Websites routinely disallow `/auth/`, `/profile`, and `/dashboard` in their `robots.txt` to keep public search engines out. Passing `--ignore-robots` tells the crawler to traverse these authenticated internal routes.
+>
+> **Safety Guard:** The crawler automatically detects and skips `/logout`, `/signout`, and account deletion links to prevent your session from being terminated during the crawl.
 
 #### Outputs Generated by Stage 1:
 - **`site_map.json`**: Hierarchical JSON dictionary mapping every page to its HTTP status, depth, title, parent page, internal links, and external links.

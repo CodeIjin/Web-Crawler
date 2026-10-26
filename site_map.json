@@ -128,9 +128,13 @@
   },
   "https://mkissa.to/auth/login?redirect=%2Fabouts%2Fhow-to": {
     "url": "https://mkissa.to/auth/login?redirect=%2Fabouts%2Fhow-to",
+    "final_url": "https://mkissa.to/auth/login?redirect=%2Fabouts%2Fhow-to",
     "depth": 2,
-    "status": "blocked_by_robots",
-    "found_on": "https://mkissa.to/abouts/how-to"
+    "status": 200,
+    "found_on": "https://mkissa.to/abouts/how-to",
+    "title": "",
+    "internal_links": [],
+    "external_links": []
   },
   "https://mkissa.to/collections": {
     "url": "https://mkissa.to/collections",
@@ -238,9 +242,13 @@
   },
   "https://mkissa.to/auth/profile?tab=posts": {
     "url": "https://mkissa.to/auth/profile?tab=posts",
+    "final_url": "https://mkissa.to/auth/profile?tab=posts",
     "depth": 2,
-    "status": "blocked_by_robots",
-    "found_on": "https://mkissa.to/abouts/how-to"
+    "status": 200,
+    "found_on": "https://mkissa.to/abouts/how-to",
+    "title": "",
+    "internal_links": [],
+    "external_links": []
   },
   "https://mkissa.to/search/anime?cty=ALL&tr=sub": {
     "url": "https://mkissa.to/search/anime?cty=ALL&tr=sub",
@@ -301,21 +309,33 @@
   },
   "https://mkissa.to/auth/profile?tab=edit": {
     "url": "https://mkissa.to/auth/profile?tab=edit",
+    "final_url": "https://mkissa.to/auth/profile?tab=edit",
     "depth": 2,
-    "status": "blocked_by_robots",
-    "found_on": "https://mkissa.to/abouts/how-to"
+    "status": 200,
+    "found_on": "https://mkissa.to/abouts/how-to",
+    "title": "",
+    "internal_links": [],
+    "external_links": []
   },
   "https://mkissa.to/auth/friends": {
     "url": "https://mkissa.to/auth/friends",
+    "final_url": "https://mkissa.to/auth/friends",
     "depth": 2,
-    "status": "blocked_by_robots",
-    "found_on": "https://mkissa.to/abouts/how-to"
+    "status": 200,
+    "found_on": "https://mkissa.to/abouts/how-to",
+    "title": "",
+    "internal_links": [],
+    "external_links": []
   },
   "https://mkissa.to/auth/profile?tab=frames": {
     "url": "https://mkissa.to/auth/profile?tab=frames",
+    "final_url": "https://mkissa.to/auth/profile?tab=frames",
     "depth": 2,
-    "status": "blocked_by_robots",
-    "found_on": "https://mkissa.to/abouts/how-to"
+    "status": 200,
+    "found_on": "https://mkissa.to/abouts/how-to",
+    "title": "",
+    "internal_links": [],
+    "external_links": []
   },
   "https://mkissa.to/activities": {
     "url": "https://mkissa.to/activities",
@@ -329,9 +349,13 @@
   },
   "https://mkissa.to/auth/profile?tab=activity": {
     "url": "https://mkissa.to/auth/profile?tab=activity",
+    "final_url": "https://mkissa.to/auth/profile?tab=activity",
     "depth": 2,
-    "status": "blocked_by_robots",
-    "found_on": "https://mkissa.to/abouts/how-to"
+    "status": 200,
+    "found_on": "https://mkissa.to/abouts/how-to",
+    "title": "",
+    "internal_links": [],
+    "external_links": []
   },
   "https://mkissa.to/abouts/about": {
     "url": "https://mkissa.to/abouts/about",

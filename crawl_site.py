@@ -130,11 +130,45 @@ def load_cookies(session, cookie_str=None, cookies_file=None):
             print(f"[!] Error loading cookies from {cookies_file}: {e}")
 
 
+STEALTH_INIT_SCRIPT = """
+// 1. Remove automation indicators
+Object.defineProperty(navigator, 'webdriver', {
+    get: () => undefined,
+});
+
+// 2. Ensure chrome runtime object exists
+if (!window.chrome) {
+    window.chrome = { runtime: {} };
+}
+
+// 3. Neutralize anti-debugging / debugger pause loops triggered on tab switch
+const _origFunction = window.Function;
+window.Function = function(...args) {
+    if (args.length > 0 && typeof args[args.length - 1] === 'string') {
+        const src = args[args.length - 1];
+        if (src.includes('debugger')) {
+            return function() {};
+        }
+    }
+    return _origFunction.apply(this, args);
+};
+
+const _origEval = window.eval;
+window.eval = function(code) {
+    if (typeof code === 'string' && code.includes('debugger')) {
+        return undefined;
+    }
+    return _origEval.apply(this, arguments);
+};
+"""
+
+
 def interactive_browser_login(start_url, profile_dir=".browser_profile", save_cookies_file="cookies.json"):
     """
-    Opens a real Chromium browser window via Playwright with a persistent user data directory.
-    Allows the user to log in naturally (handling 2FA, OAuth, CAPTCHAs, email verification).
-    Saves the session state to cookies.json and storage_state.json for immediate and future crawl reuse.
+    Opens a real Chrome / Edge browser window via Playwright with a persistent user data directory.
+    Uses real system Chrome (channel='chrome') and masks automation indicators to allow
+    Google OAuth ('Continue with Google') and neutralize anti-debugging tab-freeze traps.
+    Saves the session state to cookies.json and storage_state.json for all future crawl runs.
     """
     try:
         from playwright.sync_api import sync_playwright
@@ -150,18 +184,45 @@ def interactive_browser_login(start_url, profile_dir=".browser_profile", save_co
 
     cookies = []
     with sync_playwright() as p:
-        context = p.chromium.launch_persistent_context(
-            user_data_dir=profile_dir,
-            headless=False,
-            viewport={"width": 1280, "height": 820},
-        )
+        context = None
+        # Try real system Google Chrome first (bypasses Google's 'browser not secure' OAuth block)
+        for channel in ["chrome", "msedge", None]:
+            try:
+                kwargs = {
+                    "user_data_dir": profile_dir,
+                    "headless": False,
+                    "viewport": {"width": 1280, "height": 820},
+                    "args": [
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-infobars",
+                    ],
+                    "ignore_default_args": ["--enable-automation"],
+                }
+                if channel:
+                    kwargs["channel"] = channel
+                context = p.chromium.launch_persistent_context(**kwargs)
+                if channel:
+                    print(f"[*] Using installed {channel.capitalize()} browser (Google OAuth enabled).")
+                break
+            except Exception:
+                continue
+
+        if not context:
+            print("[!] Failed to launch browser window.")
+            return None
+
+        # Inject stealth & anti-debugger neutralization script
+        context.add_init_script(STEALTH_INIT_SCRIPT)
+
         page = context.pages[0] if context.pages else context.new_page()
         try:
             page.goto(start_url, wait_until="commit", timeout=45000)
         except Exception as e:
             print(f"[*] Navigating to {start_url}: {e}")
 
-        print("\n>>> Please complete your login in the browser window.")
+        print("\n>>> Please complete your login in the browser window (Google sign-in, email, etc.).")
         try:
             input(">>> When you are fully logged in, press [ENTER] here in the terminal to continue: ")
         except (EOFError, KeyboardInterrupt):

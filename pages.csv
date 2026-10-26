@@ -1,51 +1,51 @@
 url,depth,status,title,found_on,internal_link_count,external_link_count
-https://www.wikipedia.org/,0,200,Wikipedia,,348,21
-https://en.wikipedia.org/,1,200,"Wikipedia, the free encyclopedia",https://www.wikipedia.org/,576,45
-https://ja.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,298,46
-https://de.wikipedia.org/,1,200,Wikipedia – Die freie Enzyklopädie,https://www.wikipedia.org/,459,37
-https://fr.wikipedia.org/,1,200,"Wikipédia, l'encyclopédie libre",https://www.wikipedia.org/,550,38
-https://ru.wikipedia.org/,1,200,Википедия — свободная энциклопедия,https://www.wikipedia.org/,548,47
-https://es.wikipedia.org/,1,200,"Wikipedia, la enciclopedia libre",https://www.wikipedia.org/,309,45
-https://it.wikipedia.org/,1,200,"Wikipedia, l'enciclopedia libera",https://www.wikipedia.org/,357,63
-https://zh.wikipedia.org/,1,200,维基百科，自由的百科全书,https://www.wikipedia.org/,557,44
-https://pt.wikipedia.org/,1,200,"Wikipédia, a enciclopédia livre",https://www.wikipedia.org/,570,54
-https://pl.wikipedia.org/,1,200,"Wikipedia, wolna encyklopedia",https://www.wikipedia.org/,231,42
-https://ar.wikipedia.org/,1,200,ويكيبيديا، الموسوعة الحرة,https://www.wikipedia.org/,614,47
-https://fa.wikipedia.org/,1,200,ویکی‌پدیا، دانشنامهٔ آزاد,https://www.wikipedia.org/,411,42
-https://arz.wikipedia.org/,1,200,ويكيبيديا,https://www.wikipedia.org/,565,37
-https://nl.wikipedia.org/,1,200,"Wikipedia, de vrije encyclopedie",https://www.wikipedia.org/,492,42
-https://ceb.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,102,35
-https://sv.wikipedia.org/,1,200,"Wikipedia, den fria encyklopedin",https://www.wikipedia.org/,575,45
-https://uk.wikipedia.org/,1,200,Вікіпедія,https://www.wikipedia.org/,292,42
-https://vi.wikipedia.org/,1,200,"Wikipedia, bách khoa toàn thư mở",https://www.wikipedia.org/,303,44
-https://war.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,551,41
-https://af.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,370,35
-https://sq.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,481,53
-https://ast.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,248,41
-https://az.wikipedia.org/,1,200,"Vikipediya, azad ensiklopediya",https://www.wikipedia.org/,512,39
-https://bg.wikipedia.org/,1,200,Уикипедия,https://www.wikipedia.org/,527,45
-https://zh-min-nan.wikipedia.org/,1,200,"Wikipedia, chū-iû ê pek-kho-choân-su",https://www.wikipedia.org/,224,44
-https://bn.wikipedia.org/,1,200,"উইকিপিডিয়া, একটি মুক্ত বিশ্বকোষ",https://www.wikipedia.org/,397,51
-https://be.wikipedia.org/,1,200,Вікіпедыя,https://www.wikipedia.org/,194,37
-https://ca.wikipedia.org/,1,200,Viquipèdia,https://www.wikipedia.org/,479,28
-https://cs.wikipedia.org/,1,200,"Wikipedie, otevřená encyklopedie",https://www.wikipedia.org/,578,43
-https://cy.wikipedia.org/,1,200,Wicipedia,https://www.wikipedia.org/,525,37
-https://da.wikipedia.org/,1,200,"Wikipedia, den frie encyklopædi",https://www.wikipedia.org/,693,46
-https://et.wikipedia.org/,1,200,Vikipeedia,https://www.wikipedia.org/,532,37
-https://el.wikipedia.org/,1,200,Βικιπαίδεια,https://www.wikipedia.org/,445,44
-https://eo.wikipedia.org/,1,200,Vikipedio,https://www.wikipedia.org/,516,55
-https://eu.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,462,40
-https://gl.wikipedia.org/,1,200,"Wikipedia, a enciclopedia libre",https://www.wikipedia.org/,159,43
-https://ko.wikipedia.org/,1,200,"위키백과, 우리 모두의 백과사전",https://www.wikipedia.org/,201,45
-https://ha.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,523,33
-https://hy.wikipedia.org/,1,200,Վիքիպեդիա՝ ազատ հանրագիտարան,https://www.wikipedia.org/,503,40
-https://hi.wikipedia.org/,1,200,विकिपीडिया,https://www.wikipedia.org/,734,40
-https://hr.wikipedia.org/,1,200,Wikipedija,https://www.wikipedia.org/,520,39
-https://id.wikipedia.org/,1,200,"Wikipedia bahasa Indonesia, ensiklopedia bebas",https://www.wikipedia.org/,558,46
-https://he.wikipedia.org/,1,200,ויקיפדיה,https://www.wikipedia.org/,576,43
-https://ka.wikipedia.org/,1,200,"ვიკიპედია, თავისუფალი ენციკლოპედია",https://www.wikipedia.org/,515,41
-https://lld.wikipedia.org/,1,200,Wikipedia,https://www.wikipedia.org/,463,25
-https://la.wikipedia.org/,1,200,Vicipaedia,https://www.wikipedia.org/,601,44
-https://lv.wikipedia.org/,1,200,Vikipēdija,https://www.wikipedia.org/,173,36
-https://lt.wikipedia.org/,1,200,Vikipedija,https://www.wikipedia.org/,157,48
-https://hu.wikipedia.org/,1,200,"Wikipédia, a szabad enciklopédia",https://www.wikipedia.org/,580,39
+https://mkissa.to/,0,200,MKissa â M.Kissa,,7,0
+https://mkissa.to/abouts/how-to,1,200,How to â MKissa,https://mkissa.to/,26,0
+https://mkissa.to/anime?tr=sub,1,200,MKissa - Browse Anime - Discover Anime Series,https://mkissa.to/,3,0
+https://mkissa.to/manga,1,200,MKissa - Browse Manga - Discover Manga Titles,https://mkissa.to/,3,0
+https://mkissa.to/cases,1,200,MKissa â Quizzes,https://mkissa.to/,0,0
+https://mkissa.to/users,1,200,MKissa â Top Users,https://mkissa.to/,0,0
+https://mkissa.to/guides,1,200,,https://mkissa.to/,0,0
+https://mkissa.to/search/character,1,200,MKissa - Find Best or Top Anime/Manga Characters,https://mkissa.to/,3,0
+https://mkissa.to/auth/login?redirect=%2Fabouts%2Fhow-to,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/collections,2,200,MKissa â Anime|Manga|Music Collections,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/collections?prefer=my,2,200,MKissa â Anime|Manga|Music Collections,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/tierlists,2,200,MKissa â Tier lists,https://mkissa.to/abouts/how-to,1,0
+https://mkissa.to/tierlists?prefer=my,2,200,MKissa â Tier lists: my,https://mkissa.to/abouts/how-to,1,0
+https://mkissa.to/cases/create,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/cases?prefer=my,2,200,MKissa â Quizzes: my,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/cases/create?playKind=survey,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/guides/create,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/forum,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/forum?compose=1,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/profile?tab=posts,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/search/anime?cty=ALL&tr=sub,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/forum?board=sfboard000000000000000003,2,200,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/abouts/contact,2,200,Contact â MKissa,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/ranking?slot=boostedMonthly&type=anime,2,200,MKissa â Most boosted Anime,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/games,2,200,MKissa â Games,https://mkissa.to/abouts/how-to,6,0
+https://mkissa.to/auth/profile?tab=edit,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/friends,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/profile?tab=frames,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/activities,2,200,MKissa â Recent activity,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/auth/profile?tab=activity,2,blocked_by_robots,,https://mkissa.to/abouts/how-to,0,0
+https://mkissa.to/abouts/about,2,200,About â MKissa,https://mkissa.to/abouts/how-to,6,0
+https://mkissa.to/popular?range=1&type=anime,2,200,MKissa - Popular Anime,https://mkissa.to/anime?tr=sub,0,0
+https://mkissa.to/search/anime?cty=ALL&sortBy=Top&tr=sub,2,200,,https://mkissa.to/anime?tr=sub,0,0
+https://mkissa.to/tierlists?format=anime&sort=Popular,2,200,MKissa â Tier lists: anime Popular,https://mkissa.to/anime?tr=sub,1,0
+https://mkissa.to/popular?range=1&type=manga,2,200,MKissa - Popular Manga,https://mkissa.to/manga,0,0
+https://mkissa.to/search/manga?cty=ALL&isManga=true&sortBy=Top,2,200,,https://mkissa.to/manga,0,0
+https://mkissa.to/tierlists?format=manga&sort=Popular,2,200,MKissa â Tier lists: manga Popular,https://mkissa.to/manga,1,0
+https://mkissa.to/tierlists?format=character&sort=Popular,2,200,MKissa â Tier lists: character Popular,https://mkissa.to/search/character,1,0
+https://mkissa.to/search/tag?format=character,2,200,MKissa - character,https://mkissa.to/search/character,1,0
+https://mkissa.to/search/tag/trending?format=character,2,200,MKissa - Trending Tags,https://mkissa.to/search/character,0,0
+https://mkissa.to/search/games,3,200,,https://mkissa.to/games,0,0
+https://mkissa.to/search/games?hasManga=1&hasShow=1,3,200,,https://mkissa.to/games,0,0
+https://mkissa.to/search/games?catalogFormats=weapon%2Ccard%2Ccharacter%2Cability%2Cartifact%2Cteam%2Clocation,3,200,,https://mkissa.to/games,0,0
+https://mkissa.to/games/popular,3,200,MKissa â Popular Games,https://mkissa.to/games,1,0
+https://mkissa.to/search/games?yearMax=2026&yearMin=2026,3,200,,https://mkissa.to/games,0,0
+https://mkissa.to/tierlists?format=game&sort=Popular,3,200,MKissa â Tier lists: game Popular,https://mkissa.to/games,1,0
+https://mkissa.to/abouts/dmca,3,200,DMCA â MKissa,https://mkissa.to/abouts/about,0,0
+https://mkissa.to/abouts/privacy,3,200,Privacy Policy â MKissa,https://mkissa.to/abouts/about,1,0
+https://mkissa.to/abouts/teoservice,3,200,Terms of Service â MKissa,https://mkissa.to/abouts/about,3,0
+https://mkissa.to/search/tag/trending,3,200,MKissa - Trending Tags,https://mkissa.to/search/tag?format=character,0,0

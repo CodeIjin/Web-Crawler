@@ -5,14 +5,18 @@ and subdomains until every link in the complete website is fetched.
 
 Install:  pip install requests beautifulsoup4 lxml
 Run:      python crawl_site.py https://example.com
-          python crawl_site.py https://www.wikipedia.org 50
-          python crawl_site.py https://mysite.com --unlimited
+          python crawl_site.py https://example.com 50
+          python crawl_site.py https://example.com --unlimited
+          python crawl_site.py https://example.com --login
+          python crawl_site.py https://example.com --cookie "sessionid=abc123" --ignore-robots
+          python crawl_site.py https://example.com --cookies-file cookies.json --ignore-robots
 Output:   site_map.json  (page-wise structure)
           pages.csv      (flat list for spreadsheets)
 """
 import argparse
 import csv
 import json
+import os
 import sys
 import time
 from collections import deque
@@ -47,6 +51,134 @@ TWO_PART_TLDS = {
     "com.mx", "org.mx",
     "com.sg", "org.sg",
 }
+
+# URLs or query patterns that could terminate session or trigger destructive actions
+DANGEROUS_PATTERNS = (
+    "/logout", "/signout", "/sign-out", "/log-out", "/exit",
+    "logout=1", "action=logout", "auth/logout",
+    "/delete", "/remove", "/cancel", "/unsubscribe",
+    "/account/delete", "/users/delete"
+)
+
+
+def is_safe_link(url):
+    """
+    Filters out links that could log out the session or trigger destructive actions.
+    Examines the path and query string against DANGEROUS_PATTERNS.
+    """
+    p = urlparse(url)
+    target = f"{p.path}?{p.query}".lower()
+    return not any(pat in target for pat in DANGEROUS_PATTERNS)
+
+
+def load_cookies(session, cookie_str=None, cookies_file=None):
+    """
+    Loads cookies into the requests.Session from a raw string, JSON file, or Netscape cookies file.
+    Supports:
+      - Raw cookie string: 'name1=val1; name2=val2'
+      - JSON list of cookie dicts (EditThisCookie, Cookie-Editor)
+      - JSON dict of key-value pairs
+      - Playwright storage_state format ({"cookies": [...]})
+      - Netscape format text file
+    """
+    if cookie_str:
+        for item in cookie_str.split(";"):
+            item = item.strip()
+            if not item:
+                continue
+            if "=" in item:
+                name, val = item.split("=", 1)
+                session.cookies.set(name.strip(), val.strip())
+
+    if cookies_file:
+        try:
+            with open(cookies_file, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            if content.startswith("[") or content.startswith("{"):
+                data = json.loads(content)
+                if isinstance(data, list):
+                    for c in data:
+                        if isinstance(c, dict) and "name" in c and "value" in c:
+                            session.cookies.set(
+                                c["name"],
+                                c["value"],
+                                domain=c.get("domain", ""),
+                                path=c.get("path", "/")
+                            )
+                elif isinstance(data, dict):
+                    if "cookies" in data and isinstance(data["cookies"], list):
+                        for c in data["cookies"]:
+                            if isinstance(c, dict) and "name" in c and "value" in c:
+                                session.cookies.set(
+                                    c["name"],
+                                    c["value"],
+                                    domain=c.get("domain", ""),
+                                    path=c.get("path", "/")
+                                )
+                    else:
+                        for k, v in data.items():
+                            session.cookies.set(str(k), str(v))
+            else:
+                for line in content.splitlines():
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    parts = line.split("\t")
+                    if len(parts) >= 7:
+                        session.cookies.set(parts[5], parts[6], domain=parts[0], path=parts[2])
+        except Exception as e:
+            print(f"[!] Error loading cookies from {cookies_file}: {e}")
+
+
+def interactive_browser_login(start_url, profile_dir=".browser_profile", save_cookies_file="cookies.json"):
+    """
+    Opens a real Chromium browser window via Playwright with a persistent user data directory.
+    Allows the user to log in naturally (handling 2FA, OAuth, CAPTCHAs, email verification).
+    Saves the session state to cookies.json and storage_state.json for immediate and future crawl reuse.
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("[!] Playwright is required for browser login. Run: pip install playwright && playwright install chromium")
+        return None
+
+    print("\n" + "=" * 70)
+    print("  [BROWSER LOGIN MODE]")
+    print(f"  Target: {start_url}")
+    print("  A browser window is opening. Please log in to your account.")
+    print("=" * 70)
+
+    cookies = []
+    with sync_playwright() as p:
+        context = p.chromium.launch_persistent_context(
+            user_data_dir=profile_dir,
+            headless=False,
+            viewport={"width": 1280, "height": 820},
+        )
+        page = context.pages[0] if context.pages else context.new_page()
+        try:
+            page.goto(start_url, wait_until="commit", timeout=45000)
+        except Exception as e:
+            print(f"[*] Navigating to {start_url}: {e}")
+
+        print("\n>>> Please complete your login in the browser window.")
+        try:
+            input(">>> When you are fully logged in, press [ENTER] here in the terminal to continue: ")
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+        cookies = context.cookies()
+        context.storage_state(path="storage_state.json")
+        context.close()
+
+    if cookies:
+        with open(save_cookies_file, "w", encoding="utf-8") as f:
+            json.dump(cookies, f, indent=2)
+        print(f"\n[*] Success! Captured {len(cookies)} cookies.")
+        print(f"[*] Saved to '{save_cookies_file}' and 'storage_state.json'.")
+        print("[*] These credentials will be automatically reused for this and future runs.\n")
+        return save_cookies_file
+    return None
 
 
 def extract_base_domain(host):
@@ -146,7 +278,16 @@ def sitemap_urls(session, base, base_domain, include_subdomains=True):
     return [u for u in found if same_site(u, base_domain, include_subdomains)]
 
 
-def crawl(start_url, max_pages=DEFAULT_MAX_PAGES, include_subdomains=True, delay=DEFAULT_DELAY):
+def crawl(
+    start_url,
+    max_pages=DEFAULT_MAX_PAGES,
+    include_subdomains=True,
+    delay=DEFAULT_DELAY,
+    ignore_robots=False,
+    cookie=None,
+    cookies_file=None,
+    custom_headers=None,
+):
     start_url = normalize(start_url)
     parsed_start = urlparse(start_url)
     raw_host = parsed_start.netloc.lower()
@@ -159,10 +300,26 @@ def crawl(start_url, max_pages=DEFAULT_MAX_PAGES, include_subdomains=True, delay
     print(f"[*] Starting crawl at: {start_url}")
     print(f"[*] Target domain: {base_domain} (include subdomains: {include_subdomains})")
     limit_str = f"{max_pages} pages" if max_pages and max_pages > 0 else "unlimited"
-    print(f"[*] Max pages limit: {limit_str}, Politeness delay: {delay}s\n")
+    print(f"[*] Max pages limit: {limit_str}, Politeness delay: {delay}s")
 
     session = requests.Session()
     session.headers["User-Agent"] = USER_AGENT
+
+    if custom_headers:
+        for h in custom_headers:
+            if ":" in h:
+                k, v = h.split(":", 1)
+                session.headers[k.strip()] = v.strip()
+                print(f"[*] Injected custom header: {k.strip()}")
+
+    if cookie or cookies_file:
+        load_cookies(session, cookie_str=cookie, cookies_file=cookies_file)
+        print(f"[*] Injected session cookies ({len(session.cookies)} cookies loaded)")
+
+    if ignore_robots:
+        print("[*] robots.txt compliance is DISABLED (--ignore-robots active)\n")
+    else:
+        print("[*] robots.txt compliance is ENABLED\n")
 
     robots_cache = {}
 
@@ -172,7 +329,7 @@ def crawl(start_url, max_pages=DEFAULT_MAX_PAGES, include_subdomains=True, delay
     # Optionally seed with sitemap
     for u in sitemap_urls(session, start_url, base_domain, include_subdomains):
         n = normalize(u)
-        if same_site(n, base_domain, include_subdomains) and n not in seen:
+        if same_site(n, base_domain, include_subdomains) and is_safe_link(n) and n not in seen:
             seen.add(n)
             queue.append((n, 1, "sitemap.xml"))
 
@@ -185,7 +342,7 @@ def crawl(start_url, max_pages=DEFAULT_MAX_PAGES, include_subdomains=True, delay
 
         url, depth, parent = queue.popleft()
 
-        if not check_robots(url, session, robots_cache):
+        if not ignore_robots and not check_robots(url, session, robots_cache):
             pages[url] = {"url": url, "depth": depth, "status": "blocked_by_robots", "found_on": parent}
             print(f"[-] [robots.txt disallowed] {url}")
             continue
@@ -227,6 +384,8 @@ def crawl(start_url, max_pages=DEFAULT_MAX_PAGES, include_subdomains=True, delay
 
                 if same_site(link, base_domain, include_subdomains):
                     if link.lower().endswith(SKIP_EXT):
+                        continue
+                    if not is_safe_link(link):
                         continue
                     internal.add(link)
                     if link not in seen:
@@ -287,22 +446,72 @@ def parse_args():
         default=DEFAULT_DELAY,
         help=f"Politeness delay between HTTP requests in seconds (default: {DEFAULT_DELAY})"
     )
+    parser.add_argument(
+        "--cookie",
+        help="Raw cookie string for authentication (e.g. 'sessionid=abc123; user_id=456')"
+    )
+    parser.add_argument(
+        "--cookies-file",
+        help="Path to a JSON or Netscape cookies file exported from your browser"
+    )
+    parser.add_argument(
+        "--header",
+        action="append",
+        dest="headers",
+        help="Custom HTTP header in 'Key: Value' format (e.g. 'Authorization: Bearer <token>'). Can be specified multiple times."
+    )
+    parser.add_argument(
+        "--login",
+        action="store_true",
+        help="Open an interactive browser window to log in once. Automatically captures and saves your session for all future runs."
+    )
+    parser.add_argument(
+        "--browser-profile",
+        default=".browser_profile",
+        help="Path to persistent browser profile directory (default: .browser_profile)"
+    )
+    parser.add_argument(
+        "--ignore-robots",
+        action="store_true",
+        help="Bypass robots.txt checks (essential for crawling logged-in pages like /auth, /profile, /dashboard)"
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        sys.exit("Usage: python crawl_site.py https://yoursite.com [max_pages] [--unlimited] [--exact-domain] [--delay SECS]")
+        sys.exit("Usage: python crawl_site.py https://yoursite.com [max_pages] [--unlimited] [--login] [--exact-domain] [--delay SECS]")
 
     args = parse_args()
     page_limit = None if args.unlimited or args.max_pages == 0 else args.max_pages
     include_sub = not args.exact_domain
 
+    cookies_file = args.cookies_file
+    ignore_robots = args.ignore_robots
+
+    if args.login:
+        saved_file = interactive_browser_login(
+            start_url=args.url,
+            profile_dir=args.browser_profile,
+            save_cookies_file="cookies.json"
+        )
+        if saved_file:
+            cookies_file = saved_file
+            ignore_robots = True  # Authenticated crawling typically requires accessing /auth /profile
+    elif not args.cookie and not cookies_file and os.path.exists("cookies.json"):
+        cookies_file = "cookies.json"
+        print("[*] Auto-detected existing 'cookies.json' from previous login. Automatically reusing session.")
+
     result = crawl(
         start_url=args.url,
         max_pages=page_limit,
         include_subdomains=include_sub,
-        delay=args.delay
+        delay=args.delay,
+        ignore_robots=ignore_robots,
+        cookie=args.cookie,
+        cookies_file=cookies_file,
+        custom_headers=args.headers,
     )
     save(result)
     print(f"\nDone! Crawled {len(result)} pages. Saved to site_map.json and pages.csv")
+

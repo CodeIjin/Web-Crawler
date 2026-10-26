@@ -12,9 +12,12 @@ __pycache__/
 dist/
 build/
 
-# Playwright
+# Playwright & Browser Sessions
 playwright-report/
 test-results/
+.browser_profile/
+cookies.json
+storage_state.json
 
 # Editor / OS files
 .vscode/

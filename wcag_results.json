@@ -3,7 +3,7 @@
     "engine": "Deque axe-core",
     "engine_url": "https://github.com/dequelabs/axe-core",
     "axe_version": "4.14.0",
-    "scan_timestamp": "2026-10-27T14:48:26.220532Z",
+    "scan_timestamp": "2026-10-27T15:16:00.522861Z",
     "standards_checked": [
       "wcag2a",
       "wcag2aa",

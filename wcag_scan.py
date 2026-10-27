@@ -1,21 +1,24 @@
 """
-Runs axe-core across WCAG 2.0 / 2.1 / 2.2 Level A, Level AA, and Level AAA standards
-on every page discovered by crawl_site.py.
+Direct integration of official Deque axe-core (https://github.com/dequelabs/axe-core).
+Executes official axe-core across WCAG 2.0 / 2.1 / 2.2 Level A, Level AA, and Level AAA standards
+on pages discovered by crawl_site.py using Playwright and records to SQLite database.
 
 Outputs:
   - wcag_compliance_report.csv : Hierarchical CSV report grouped by URL and labeled by WCAG A, AA, and AAA
   - wcag_page_compliance.csv   : Executive page-level compliance matrix (A / AA / AAA Pass/Fail status)
   - wcag_summary.csv           : Standard violation summary with WCAG level column
   - wcag_results.json          : Full detailed JSON with DOM element snippets and selectors
+  - SQLite database            : Fully logged into crawl_runs, crawled_pages, wcag_violations, wcag_element_nodes
 """
 import argparse
 import csv
 import json
 import os
 import sys
+import urllib.request
+from datetime import datetime
 from urllib.parse import urlparse
 
-from axe_playwright_python.sync_playwright import Axe
 from playwright.sync_api import sync_playwright
 
 from database import (
@@ -25,8 +28,12 @@ from database import (
     record_wcag_page_results,
 )
 
+AXE_CORE_CDN_URL = "https://cdn.jsdelivr.net/npm/axe-core@latest/axe.min.js"
+AXE_CORE_FALLBACK_URL = "https://unpkg.com/axe-core/axe.min.js"
+DEFAULT_AXE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "axe_core", "axe.min.js")
+
 # Complete WCAG standards tags: Level A, Level AA, and Level AAA
-WCAG_TAGS = [
+DEFAULT_WCAG_TAGS = [
     "wcag2a", "wcag2aa", "wcag2aaa",
     "wcag21a", "wcag21aa",
     "wcag22a", "wcag22aa", "wcag22aaa",
@@ -47,10 +54,53 @@ IMPACT_ORDER = {
 }
 
 
+def download_official_axe(target_path=DEFAULT_AXE_PATH, force=False):
+    """
+    Downloads or updates the official axe-core JavaScript bundle directly from
+    the Deque Systems distribution (https://github.com/dequelabs/axe-core).
+    """
+    if os.path.exists(target_path) and not force:
+        return target_path
+
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    print(f"[*] Downloading official Deque axe-core bundle to '{target_path}'...")
+    urls = [AXE_CORE_CDN_URL, AXE_CORE_FALLBACK_URL]
+    last_err = None
+
+    for url in urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "SiteAuditCrawler/1.0"})
+            with urllib.request.urlopen(req, timeout=20) as resp, open(target_path, "wb") as f:
+                f.write(resp.read())
+            size = os.path.getsize(target_path)
+            print(f"[*] Successfully installed official axe-core ({size:,} bytes).")
+            return target_path
+        except Exception as e:
+            last_err = e
+            continue
+
+    raise RuntimeError(f"Failed to download axe-core from CDNs: {last_err}")
+
+
+def get_axe_script(script_path=DEFAULT_AXE_PATH):
+    """
+    Reads the official axe.min.js bundle. Downloads if not present.
+    """
+    if not os.path.exists(script_path):
+        download_official_axe(script_path)
+
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if "axe" not in content:
+        raise ValueError(f"Corrupt or invalid axe-core script in '{script_path}'")
+    return content
+
+
 def classify_wcag_level(tags):
     """
-    Classifies a rule into 'WCAG A', 'WCAG AA', or 'WCAG AAA'.
-    Precedence: AAA is highest tier requirement, AA is standard, A is baseline.
+    Classifies an axe-core rule into 'WCAG A', 'WCAG AA', 'WCAG AAA', or 'Best Practice'.
+    Precedence: AAA is highest requirement, AA is standard, A is baseline.
     """
     tag_set = set(tags)
     if tag_set & {"wcag2aaa", "wcag21aaa", "wcag22aaa"}:
@@ -59,6 +109,8 @@ def classify_wcag_level(tags):
         return "WCAG AA"
     elif tag_set & {"wcag2a", "wcag21a", "wcag22a"}:
         return "WCAG A"
+    elif "best-practice" in tag_set:
+        return "Best Practice"
     return "WCAG A"
 
 
@@ -157,14 +209,79 @@ def load_playwright_cookies(cookie_str=None, cookies_file=None, default_url=None
     return cookies
 
 
+def execute_axe_core(page, axe_script, tags=None):
+    """
+    Injects the official axe-core script and executes axe.run() directly in the page DOM.
+    Returns the parsed axe-core results dictionary (violations, incomplete, passes, inapplicable, version).
+    """
+    # 1. Inject official axe.min.js into page DOM
+    page.evaluate(axe_script)
+
+    # 2. Get axe version from page
+    axe_version = page.evaluate("() => typeof axe !== 'undefined' ? axe.version : 'unknown'")
+
+    # 3. Configure axe options
+    axe_options = {}
+    if tags:
+        axe_options["runOnly"] = {"type": "tag", "values": tags}
+
+    # 4. Execute axe.run(document, options)
+    # Playwright's page.evaluate natively awaits the Promise returned by axe.run()
+    run_script = """(options) => {
+        return new Promise((resolve, reject) => {
+            if (typeof axe === 'undefined') {
+                reject(new Error('axe-core is not defined on the window object'));
+                return;
+            }
+            axe.run(document, options)
+                .then(results => resolve(results))
+                .catch(err => reject(err));
+        });
+    }"""
+
+    results = page.evaluate(run_script, axe_options)
+    results["axe_version"] = axe_version
+    return results
+
+
+def safe_write_csv(filepath, fieldnames, data_rows):
+    """Writes data rows to CSV, handling file lock gracefully."""
+    def write_data(f):
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        w.writerows(data_rows)
+
+    try:
+        with open(filepath, "w", newline="", encoding="utf-8") as f:
+            write_data(f)
+        return filepath
+    except PermissionError:
+        base, ext = os.path.splitext(filepath)
+        fallback = f"{base}_latest{ext}"
+        print(f"[!] Warning: '{filepath}' is open in another program (e.g. Excel). Saving to '{fallback}'.")
+        with open(fallback, "w", newline="", encoding="utf-8") as f:
+            write_data(f)
+        return fallback
+
+
 def run_scan(
     sitemap_path="site_map.json",
     run_id=None,
     db_path=DEFAULT_DB_PATH,
     cookie=None,
     cookies_file=None,
-    storage_state=None
+    storage_state=None,
+    tags=None,
+    headless=True
 ):
+    """
+    Main runner: iterates through pages discovered in sitemap_path, injects official
+    axe-core, classifies violations against WCAG standards, records to SQLite database,
+    and outputs compliance reports.
+    """
+    if tags is None:
+        tags = DEFAULT_WCAG_TAGS
+
     pages_data = load_sitemap_data(sitemap_path)
     target_pages = [
         (url, meta) for url, meta in pages_data.items()
@@ -176,22 +293,38 @@ def run_scan(
         return
 
     if not run_id:
-        run_id = get_latest_run_id(db_path)
+        try:
+            run_id = get_latest_run_id(db_path)
+        except Exception:
+            run_id = None
+
+    # Load official axe-core script
+    axe_script = get_axe_script()
 
     print(f"[*] Starting WCAG compliance scan across {len(target_pages)} pages.")
-    print("    Target Standards: WCAG Level A, Level AA, Level AAA (2.0 / 2.1 / 2.2)")
+    print("    Engine: Official Deque axe-core (https://github.com/dequelabs/axe-core)")
+    print(f"    Target Standards: WCAG Level A, Level AA, Level AAA (2.0 / 2.1 / 2.2)")
     if run_id:
         print(f"    Recording to Database: {db_path} (Run: {run_id})\n")
     else:
         print(f"    Database: {db_path}\n")
 
-    axe = Axe()
     all_results = {}
     detailed_rows = []
     page_summary_rows = []
+    active_axe_version = "unknown"
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = None
+        for channel in [None, "chrome", "msedge"]:
+            try:
+                browser = pw.chromium.launch(headless=headless, channel=channel)
+                break
+            except Exception:
+                continue
+        if not browser:
+            browser = pw.chromium.launch(headless=headless)
+
         context_kwargs = {}
         if storage_state:
             context_kwargs["storage_state"] = storage_state
@@ -218,9 +351,11 @@ def run_scan(
 
             try:
                 page.goto(url, wait_until="load", timeout=30000)
-                result = axe.run(page, options={"runOnly": {"type": "tag", "values": WCAG_TAGS}})
-                violations = result.response.get("violations", [])
-                incomplete = result.response.get("incomplete", [])
+                raw_results = execute_axe_core(page, axe_script, tags=tags)
+                active_axe_version = raw_results.get("axe_version", active_axe_version)
+                violations = raw_results.get("violations", [])
+                incomplete = raw_results.get("incomplete", [])
+                passes = raw_results.get("passes", [])
             except Exception as e:
                 print(f"  [Error scanning {url}]: {e}")
                 all_results[url] = {"error": str(e), "title": title, "depth": depth}
@@ -241,9 +376,9 @@ def run_scan(
                 continue
 
             # Track violations by level for this page
-            page_level_counts = {"WCAG A": 0, "WCAG AA": 0, "WCAG AAA": 0}
+            page_level_counts = {"WCAG A": 0, "WCAG AA": 0, "WCAG AAA": 0, "Best Practice": 0}
             impact_counts = {"critical": 0, "serious": 0, "moderate": 0, "minor": 0}
-            page_violations_by_level = {"WCAG A": [], "WCAG AA": [], "WCAG AAA": []}
+            page_violations_by_level = {"WCAG A": [], "WCAG AA": [], "WCAG AAA": [], "Best Practice": []}
 
             for v in violations:
                 level = classify_wcag_level(v.get("tags", []))
@@ -259,9 +394,11 @@ def run_scan(
                 # Sample failing DOM target / selector / snippet
                 sample_selector = ""
                 sample_html = ""
+                failure_summary = ""
                 if nodes:
                     sample_selector = " ".join(nodes[0].get("target", []))
                     sample_html = (nodes[0].get("html") or "").replace("\n", " ").strip()[:150]
+                    failure_summary = (nodes[0].get("failureSummary") or "").replace("\n", " ").strip()[:200]
 
                 row = {
                     "page_url": url,
@@ -275,6 +412,7 @@ def run_scan(
                     "description": v.get("help", ""),
                     "failing_selector_sample": sample_selector,
                     "failing_html_sample": sample_html,
+                    "failure_summary": failure_summary,
                     "help_url": v.get("helpUrl", ""),
                 }
                 detailed_rows.append(row)
@@ -312,6 +450,7 @@ def run_scan(
             all_results[url] = {
                 "title": title,
                 "depth": depth,
+                "axe_version": active_axe_version,
                 "compliance_summary": {
                     "level_a": "PASS" if not a_fail else "FAIL",
                     "level_aa": "PASS" if not aa_fail else "FAIL",
@@ -321,6 +460,7 @@ def run_scan(
                 "violations_by_level": page_violations_by_level,
                 "raw_violations": violations,
                 "needs_manual_review": incomplete,
+                "total_passed_rules": len(passes),
             }
 
             if run_id:
@@ -362,29 +502,11 @@ def run_scan(
         )
     )
 
-    def safe_write_csv(filepath, fieldnames, data_rows):
-        def write_data(f):
-            w = csv.DictWriter(f, fieldnames=fieldnames)
-            w.writeheader()
-            w.writerows(data_rows)
-
-        try:
-            with open(filepath, "w", newline="", encoding="utf-8") as f:
-                write_data(f)
-            return filepath
-        except PermissionError:
-            base, ext = os.path.splitext(filepath)
-            fallback = f"{base}_latest{ext}"
-            print(f"[!] Warning: '{filepath}' is open in another program (e.g. Excel). Saving to '{fallback}'.")
-            with open(fallback, "w", newline="", encoding="utf-8") as f:
-                write_data(f)
-            return fallback
-
     # 2. Write Hierarchical Detailed Compliance Report CSV
     compliance_fields = [
         "page_url", "page_title", "depth", "wcag_level", "wcag_criteria",
         "impact", "rule_id", "instances", "description",
-        "failing_selector_sample", "failing_html_sample", "help_url"
+        "failing_selector_sample", "failing_html_sample", "failure_summary", "help_url"
     ]
     out_rep = safe_write_csv("wcag_compliance_report.csv", compliance_fields, detailed_rows)
 
@@ -412,29 +534,49 @@ def run_scan(
     out_sum = safe_write_csv("wcag_summary.csv", summary_fields, legacy_rows)
 
     # 5. Full JSON structure
+    output_json_payload = {
+        "metadata": {
+            "engine": "Deque axe-core",
+            "engine_url": "https://github.com/dequelabs/axe-core",
+            "axe_version": active_axe_version,
+            "scan_timestamp": datetime.utcnow().isoformat() + "Z",
+            "standards_checked": tags,
+            "total_pages_scanned": len(target_pages),
+            "total_issues_found": len(detailed_rows),
+            "run_id": run_id,
+        },
+        "pages": all_results,
+    }
     with open("wcag_results.json", "w", encoding="utf-8") as f:
-        json.dump(all_results, f, indent=2, ensure_ascii=False)
+        json.dump(output_json_payload, f, indent=2, ensure_ascii=False)
 
     print("\n" + "=" * 70)
-    print("  WCAG COMPLIANCE SCAN COMPLETED SUCCESSFULLY")
+    print("  AXE-CORE WCAG COMPLIANCE SCAN COMPLETED SUCCESSFULLY")
+    print(f"  Engine: Deque axe-core v{active_axe_version} (https://github.com/dequelabs/axe-core)")
     print(f"  Pages Scanned: {len(target_pages)}")
     print(f"  Total Issues Categorized: {len(detailed_rows)}")
     print("=" * 70)
     print("  -> wcag_compliance_report.csv (Hierarchical breakdown labeled WCAG A, AA, AAA)")
     print("  -> wcag_page_compliance.csv   (Page-by-page A / AA / AAA pass/fail matrix)")
     print("  -> wcag_summary.csv           (Standard summary)")
-    print("  -> wcag_results.json          (Full element-level JSON)\n")
+    print("  -> wcag_results.json          (Full element-level JSON with engine metadata)\n")
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Runs axe-core accessibility audits across WCAG A, AA, and AAA standards on site_map.json."
+        description="Runs official Deque axe-core accessibility audits across WCAG A, AA, and AAA standards on site_map.json."
     )
     parser.add_argument(
         "sitemap",
         nargs="?",
         default="site_map.json",
         help="Path to site_map.json (default: site_map.json)"
+    )
+    parser.add_argument(
+        "--tags",
+        nargs="+",
+        default=DEFAULT_WCAG_TAGS,
+        help="Axe-core rule tags to run (default: WCAG 2.0 / 2.1 / 2.2 A, AA, AAA tags)"
     )
     parser.add_argument(
         "--cookie",
@@ -457,11 +599,26 @@ def parse_args():
         "--run-id",
         help="Specific crawl run ID to associate results with (defaults to latest)"
     )
+    parser.add_argument(
+        "--update-axe",
+        action="store_true",
+        help="Force download and update the bundled axe.min.js to the latest official release from Deque axe-core."
+    )
+    parser.add_argument(
+        "--no-headless",
+        action="store_true",
+        help="Launch the browser in visible mode (default: headless)"
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
+
+    if args.update_axe:
+        download_official_axe(force=True)
+        print("[*] Update completed.")
+        sys.exit(0)
 
     storage_state = args.storage_state
     cookies_file = args.cookies_file
@@ -480,5 +637,7 @@ if __name__ == "__main__":
         db_path=args.db,
         cookie=args.cookie,
         cookies_file=cookies_file,
-        storage_state=storage_state
+        storage_state=storage_state,
+        tags=args.tags,
+        headless=not args.no_headless
     )

@@ -1,6 +1,6 @@
 # Full-Site Web Crawler & WCAG Accessibility Audit Suite
 
-A robust, two-stage Python pipeline that crawls an entire website (including all subdomains), maps its complete link structure, and executes automated **WCAG 2.0 / 2.1 / 2.2 (Level A & AA)** accessibility scans using **Playwright** and **axe-core**.
+A robust, two-stage Python pipeline that crawls an entire website (including all subdomains), maps its complete link structure, and executes automated **WCAG 2.0 / 2.1 / 2.2 (Level A, AA, and AAA)** accessibility scans using **Playwright** and official **Deque axe-core** ([https://github.com/dequelabs/axe-core](https://github.com/dequelabs/axe-core)).
 
 ---
 
@@ -61,13 +61,15 @@ A robust, two-stage Python pipeline that crawls an entire website (including all
 - **Sitemap Support**: Automatically inspects `sitemap.xml` and sitemap indexes to find unlinked orphan pages.
 - **Flexible Controls**: Configurable request delay, optional page limit caps, or `--unlimited` traversal mode.
 
-### Stage 2: WCAG Accessibility Scanner (`wcag_scan.py`)
+### Stage 2: Official axe-core WCAG Accessibility Scanner (`wcag_scan.py`)
+- **Official Deque `axe-core` Integration**: Directly integrates the official [axe-core](https://github.com/dequelabs/axe-core) JavaScript engine bundle (`axe.min.js`), completely removing third-party wrapper dependencies like `axe-playwright-python`.
 - **Full Standard Coverage (A, AA, AAA)**: Audits against Deque's `axe-core` rule engine for WCAG 2.0, 2.1, and 2.2 across **Level A**, **Level AA**, and **Level AAA** standards.
+- **Engine Auto-Update**: Run `python wcag_scan.py --update-axe` to fetch the latest production release of `axe-core` directly from Deque Systems.
 - **Hierarchical CSV Reporting**:
-  - `wcag_compliance_report.csv`: Organized hierarchically by URL -> WCAG Standard (`WCAG A`, `WCAG AA`, `WCAG AAA`) -> Severity Impact -> Criterion. Includes failing element selectors and HTML snippets.
+  - `wcag_compliance_report.csv`: Organized hierarchically by URL -> WCAG Standard (`WCAG A`, `WCAG AA`, `WCAG AAA`) -> Severity Impact -> Criterion. Includes failing element selectors, HTML snippets, and failure summaries.
   - `wcag_page_compliance.csv`: Executive summary matrix indicating Pass/Fail status for Level A, Level AA, and Level AAA per URL, plus total violations and impact breakdown.
-- **JavaScript & SPA Execution**: Uses a real headless Chromium instance so dynamic components, single-page applications, and interactive menus are rendered accurately.
-- **Diagnostic JSON**: `wcag_results.json` contains full violation trees with exact CSS selectors, HTML snippets, and manual review flags.
+- **JavaScript & SPA Execution**: Uses a real headless Chromium / Chrome / Edge instance via Playwright so dynamic components, single-page applications, and interactive menus are rendered accurately.
+- **Diagnostic JSON**: `wcag_results.json` contains full violation trees with exact CSS selectors, HTML snippets, failure summaries, and manual review flags.
 
 ### Starter Crawler (`crawler.py`)
 - A minimal, single-file BFS crawler with politeness limits, ideal for quick tests and learning crawler fundamentals.

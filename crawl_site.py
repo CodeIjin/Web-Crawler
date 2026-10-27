@@ -503,7 +503,7 @@ def save(pages):
     with open("site_map.json", "w", encoding="utf-8") as f:
         json.dump(pages, f, indent=2, ensure_ascii=False)
 
-    with open("pages.csv", "w", newline="", encoding="utf-8") as f:
+    def write_pages_csv(f):
         w = csv.writer(f)
         w.writerow(["url", "depth", "status", "title", "found_on", "internal_link_count", "external_link_count"])
         for p in pages.values():
@@ -511,6 +511,14 @@ def save(pages):
                 p["url"], p["depth"], p["status"], p.get("title", ""), p.get("found_on", ""),
                 len(p.get("internal_links", [])), len(p.get("external_links", [])),
             ])
+
+    try:
+        with open("pages.csv", "w", newline="", encoding="utf-8") as f:
+            write_pages_csv(f)
+    except PermissionError:
+        print("[!] Warning: 'pages.csv' is open in another program (e.g., Excel). Saving to 'pages_latest.csv'.")
+        with open("pages_latest.csv", "w", newline="", encoding="utf-8") as f:
+            write_pages_csv(f)
 
 
 def parse_args():
@@ -570,12 +578,17 @@ def parse_args():
         action="store_true",
         help="Bypass robots.txt checks (essential for crawling logged-in pages like /auth, /profile, /dashboard)"
     )
+    parser.add_argument(
+        "--no-scan",
+        action="store_true",
+        help="Skip automatically running the WCAG compliance scan after crawling."
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        sys.exit("Usage: python crawl_site.py https://yoursite.com [max_pages] [--unlimited] [--login] [--exact-domain] [--delay SECS]")
+        sys.exit("Usage: python crawl_site.py https://yoursite.com [max_pages] [--unlimited] [--login] [--exact-domain] [--delay SECS] [--no-scan]")
 
     args = parse_args()
     page_limit = None if args.unlimited or args.max_pages == 0 else args.max_pages
@@ -609,4 +622,19 @@ if __name__ == "__main__":
     )
     save(result)
     print(f"\nDone! Crawled {len(result)} pages. Saved to site_map.json and pages.csv")
+
+    if not args.no_scan:
+        print("\n" + "=" * 75)
+        print(" [>] AUTOMATICALLY STARTING WCAG COMPLIANCE SCAN (A, AA, AAA)...")
+        print("=" * 75 + "\n")
+        try:
+            from wcag_scan import run_scan
+            run_scan(
+                sitemap_path="site_map.json",
+                cookie=args.cookie,
+                cookies_file=cookies_file
+            )
+        except Exception as e:
+            print(f"[!] Error running WCAG accessibility scan: {e}")
+
 

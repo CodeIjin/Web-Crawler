@@ -19,8 +19,17 @@ test-results/
 cookies.json
 storage_state.json
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary lock fallbacks
+*_latest.csv
+
 # Editor / OS files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+

@@ -18,6 +18,13 @@ from urllib.parse import urlparse
 from axe_playwright_python.sync_playwright import Axe
 from playwright.sync_api import sync_playwright
 
+from database import (
+    DEFAULT_DB_PATH,
+    finish_run,
+    get_latest_run_id,
+    record_wcag_page_results,
+)
+
 # Complete WCAG standards tags: Level A, Level AA, and Level AAA
 WCAG_TAGS = [
     "wcag2a", "wcag2aa", "wcag2aaa",
@@ -150,7 +157,14 @@ def load_playwright_cookies(cookie_str=None, cookies_file=None, default_url=None
     return cookies
 
 
-def run_scan(sitemap_path="site_map.json", cookie=None, cookies_file=None, storage_state=None):
+def run_scan(
+    sitemap_path="site_map.json",
+    run_id=None,
+    db_path=DEFAULT_DB_PATH,
+    cookie=None,
+    cookies_file=None,
+    storage_state=None
+):
     pages_data = load_sitemap_data(sitemap_path)
     target_pages = [
         (url, meta) for url, meta in pages_data.items()
@@ -161,8 +175,15 @@ def run_scan(sitemap_path="site_map.json", cookie=None, cookies_file=None, stora
         print("[!] No crawled pages with HTTP 200 found to scan.")
         return
 
+    if not run_id:
+        run_id = get_latest_run_id(db_path)
+
     print(f"[*] Starting WCAG compliance scan across {len(target_pages)} pages.")
-    print("    Target Standards: WCAG Level A, Level AA, Level AAA (2.0 / 2.1 / 2.2)\n")
+    print("    Target Standards: WCAG Level A, Level AA, Level AAA (2.0 / 2.1 / 2.2)")
+    if run_id:
+        print(f"    Recording to Database: {db_path} (Run: {run_id})\n")
+    else:
+        print(f"    Database: {db_path}\n")
 
     axe = Axe()
     all_results = {}
@@ -302,7 +323,33 @@ def run_scan(sitemap_path="site_map.json", cookie=None, cookies_file=None, stora
                 "needs_manual_review": incomplete,
             }
 
+            if run_id:
+                try:
+                    record_wcag_page_results(
+                        run_id=run_id,
+                        url=url,
+                        title=title,
+                        depth=depth,
+                        compliance_summary={
+                            "level_a": "PASS" if not a_fail else "FAIL",
+                            "level_aa": "PASS" if not aa_fail else "FAIL",
+                            "level_aaa": "PASS" if not aaa_fail else "FAIL",
+                            "overall": compliance_str,
+                        },
+                        violations=violations,
+                        db_path=db_path
+                    )
+                except Exception as dbe:
+                    print(f"  [!] Note: could not write page to database: {dbe}")
+
         browser.close()
+
+    if run_id:
+        try:
+            finish_run(run_id, db_path=db_path)
+            print(f"[*] Audit run '{run_id}' successfully finalized in database ({db_path}).")
+        except Exception as dbe:
+            print(f"[!] Warning: failed to finalize run in database: {dbe}")
 
     # 1. Sort detailed rows hierarchically: Page URL -> WCAG Level (A -> AA -> AAA) -> Impact Severity -> Criteria
     detailed_rows.sort(
@@ -401,6 +448,15 @@ def parse_args():
         "--storage-state",
         help="Path to Playwright storage_state.json authentication state"
     )
+    parser.add_argument(
+        "--db",
+        default=DEFAULT_DB_PATH,
+        help=f"Path to SQLite database (default: {DEFAULT_DB_PATH})"
+    )
+    parser.add_argument(
+        "--run-id",
+        help="Specific crawl run ID to associate results with (defaults to latest)"
+    )
     return parser.parse_args()
 
 
@@ -420,6 +476,8 @@ if __name__ == "__main__":
 
     run_scan(
         sitemap_path=args.sitemap,
+        run_id=args.run_id,
+        db_path=args.db,
         cookie=args.cookie,
         cookies_file=cookies_file,
         storage_state=storage_state

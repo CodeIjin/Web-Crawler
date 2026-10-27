@@ -26,6 +26,13 @@ from urllib.robotparser import RobotFileParser
 import requests
 from bs4 import BeautifulSoup
 
+from database import (
+    DEFAULT_DB_PATH,
+    export_to_csv as db_export_to_csv,
+    record_page as db_record_page,
+    start_run as db_start_run,
+)
+
 USER_AGENT = "SiteAuditCrawler/1.0 (+mailto:you@example.com)"
 DEFAULT_DELAY = 0.5
 DEFAULT_MAX_PAGES = 10000
@@ -382,6 +389,7 @@ def crawl(
     cookie=None,
     cookies_file=None,
     custom_headers=None,
+    db_path=DEFAULT_DB_PATH,
 ):
     start_url = normalize(start_url)
     parsed_start = urlparse(start_url)
@@ -391,6 +399,13 @@ def crawl(
         base_domain = extract_base_domain(raw_host)
     else:
         base_domain = raw_host[4:] if raw_host.startswith("www.") else raw_host
+
+    run_id = None
+    try:
+        run_id = db_start_run(start_url, base_domain, db_path=db_path)
+        print(f"[*] Initialized database audit run: {run_id} ({db_path})")
+    except Exception as dbe:
+        print(f"[!] Warning: database init failed: {dbe}")
 
     print(f"[*] Starting crawl at: {start_url}")
     print(f"[*] Target domain: {base_domain} (include subdomains: {include_subdomains})")
@@ -438,15 +453,54 @@ def crawl(
         url, depth, parent = queue.popleft()
 
         if not ignore_robots and not check_robots(url, session, robots_cache):
-            pages[url] = {"url": url, "depth": depth, "status": "blocked_by_robots", "found_on": parent}
+            blocked_rec = {"url": url, "depth": depth, "status": "blocked_by_robots", "found_on": parent}
+            pages[url] = blocked_rec
+            if run_id:
+                try:
+                    db_record_page(run_id, blocked_rec, db_path=db_path)
+                except Exception:
+                    pass
             print(f"[-] [robots.txt disallowed] {url}")
             continue
 
-        try:
-            resp = session.get(url, timeout=15, allow_redirects=True)
-        except requests.RequestException as e:
-            pages[url] = {"url": url, "depth": depth, "status": f"error: {e}", "found_on": parent}
-            print(f"[!] [error] {url}: {e}")
+        # Scrapy-inspired retry & exponential backoff
+        t0 = time.time()
+        max_retries = 3
+        resp = None
+        err_msg = None
+        for attempt in range(max_retries):
+            try:
+                resp = session.get(url, timeout=15, allow_redirects=True)
+                if resp.status_code in (429, 502, 503, 504) and attempt < max_retries - 1:
+                    retry_after = resp.headers.get("Retry-After")
+                    sleep_time = float(retry_after) if retry_after and retry_after.isdigit() else (2 ** attempt * 1.5)
+                    print(f"  [!] HTTP {resp.status_code} on {url}. Backing off {sleep_time:.1f}s (retry {attempt + 1}/{max_retries})...")
+                    time.sleep(sleep_time)
+                    continue
+                break
+            except (requests.Timeout, requests.ConnectionError) as e:
+                if attempt < max_retries - 1:
+                    sleep_time = 2 ** attempt * 1.0
+                    print(f"  [!] Connection issue on {url}. Retrying in {sleep_time:.1f}s...")
+                    time.sleep(sleep_time)
+                else:
+                    err_msg = str(e)
+                    break
+            except requests.RequestException as e:
+                err_msg = str(e)
+                break
+
+        resp_time_ms = round((time.time() - t0) * 1000, 2)
+
+        if resp is None:
+            err_rec = {"url": url, "depth": depth, "status": f"error: {err_msg}", "found_on": parent, "response_time_ms": resp_time_ms}
+            pages[url] = err_rec
+            if run_id:
+                try:
+                    db_record_page(run_id, err_rec, db_path=db_path)
+                except Exception:
+                    pass
+            print(f"[!] [error] {url}: {err_msg}")
             continue
 
         final = normalize(resp.url)
@@ -457,11 +511,14 @@ def crawl(
             "status": resp.status_code,
             "found_on": parent,
             "title": "",
+            "content_type": resp.headers.get("Content-Type", ""),
+            "response_time_ms": resp_time_ms,
+            "body_sample": resp.text[:2000] if resp.text else "",
             "internal_links": [],
             "external_links": [],
         }
 
-        ctype = resp.headers.get("Content-Type", "")
+        ctype = record["content_type"]
         if resp.status_code == 200 and "text/html" in ctype and same_site(final, base_domain, include_subdomains):
             soup = BeautifulSoup(resp.text, "html.parser")
             record["title"] = (soup.title.string or "").strip() if soup.title else ""
@@ -493,10 +550,16 @@ def crawl(
             record["external_links"] = sorted(external)
 
         pages[url] = record
-        print(f"[{len(pages)}] (depth {depth}, queued {len(queue)}) {resp.status_code} {url}")
+        if run_id:
+            try:
+                db_record_page(run_id, record, db_path=db_path)
+            except Exception:
+                pass
+
+        print(f"[{len(pages)}] (depth {depth}, queued {len(queue)}, {resp_time_ms}ms) {resp.status_code} {url}")
         time.sleep(delay)
 
-    return pages
+    return pages, run_id
 
 
 def save(pages):
@@ -583,14 +646,29 @@ def parse_args():
         action="store_true",
         help="Skip automatically running the WCAG compliance scan after crawling."
     )
+    parser.add_argument(
+        "--db",
+        default=DEFAULT_DB_PATH,
+        help=f"Path to SQLite database (default: {DEFAULT_DB_PATH})"
+    )
+    parser.add_argument(
+        "--export-csv",
+        action="store_true",
+        help="Export all audit results from database to downloadable CSV files."
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        sys.exit("Usage: python crawl_site.py https://yoursite.com [max_pages] [--unlimited] [--login] [--exact-domain] [--delay SECS] [--no-scan]")
+        sys.exit("Usage: python crawl_site.py https://yoursite.com [max_pages] [--unlimited] [--login] [--exact-domain] [--delay SECS] [--no-scan] [--db PATH] [--export-csv]")
 
     args = parse_args()
+
+    if args.export_csv:
+        db_export_to_csv(db_path=args.db)
+        sys.exit(0)
+
     page_limit = None if args.unlimited or args.max_pages == 0 else args.max_pages
     include_sub = not args.exact_domain
 
@@ -610,7 +688,7 @@ if __name__ == "__main__":
         cookies_file = "cookies.json"
         print("[*] Auto-detected existing 'cookies.json' from previous login. Automatically reusing session.")
 
-    result = crawl(
+    result, run_id = crawl(
         start_url=args.url,
         max_pages=page_limit,
         include_subdomains=include_sub,
@@ -619,6 +697,7 @@ if __name__ == "__main__":
         cookie=args.cookie,
         cookies_file=cookies_file,
         custom_headers=args.headers,
+        db_path=args.db,
     )
     save(result)
     print(f"\nDone! Crawled {len(result)} pages. Saved to site_map.json and pages.csv")
@@ -631,9 +710,13 @@ if __name__ == "__main__":
             from wcag_scan import run_scan
             run_scan(
                 sitemap_path="site_map.json",
+                run_id=run_id,
+                db_path=args.db,
                 cookie=args.cookie,
                 cookies_file=cookies_file
             )
+            # Export freshest CSVs from database
+            db_export_to_csv(db_path=args.db, run_id=run_id)
         except Exception as e:
             print(f"[!] Error running WCAG accessibility scan: {e}")
 

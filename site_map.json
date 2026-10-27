@@ -6,6 +6,9 @@
     "status": 200,
     "found_on": null,
     "title": "Quotes to Scrape",
+    "content_type": "text/html; charset=utf-8",
+    "response_time_ms": 674.93,
+    "body_sample": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<title>Quotes to Scrape</title>\n    <link rel=\"stylesheet\" href=\"/static/bootstrap.min.css\">\n    <link rel=\"stylesheet\" href=\"/static/main.css\">\n    \n    \n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"row header-box\">\n            <div class=\"col-md-8\">\n                <h1>\n                    <a href=\"/\" style=\"text-decoration: none\">Quotes to Scrape</a>\n                </h1>\n            </div>\n            <div class=\"col-md-4\">\n                <p>\n                \n                    <a href=\"/login\">Login</a>\n                \n                </p>\n            </div>\n        </div>\n    \n\n<div class=\"row\">\n    <div class=\"col-md-8\">\n\n    <div class=\"quote\" itemscope itemtype=\"http://schema.org/CreativeWork\">\n        <span class=\"text\" itemprop=\"text\">“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”</span>\n        <span>by <small class=\"author\" itemprop=\"author\">Albert Einstein</small>\n        <a href=\"/author/Albert-Einstein\">(about)</a>\n        </span>\n        <div class=\"tags\">\n            Tags:\n            <meta class=\"keywords\" itemprop=\"keywords\" content=\"change,deep-thoughts,thinking,world\" /    > \n            \n            <a class=\"tag\" href=\"/tag/change/page/1/\">change</a>\n            \n            <a class=\"tag\" href=\"/tag/deep-thoughts/page/1/\">deep-thoughts</a>\n            \n            <a class=\"tag\" href=\"/tag/thinking/page/1/\">thinking</a>\n            \n            <a class=\"tag\" href=\"/tag/world/page/1/\">world</a>\n            \n        </div>\n    </div>\n\n    <div class=\"quote\" itemscope itemtype=\"http://schema.org/CreativeWork\">\n        <span class=\"text\" itemprop=\"text\">“It is our choices, Harry, that show what we truly are, far more than our abilities.”</span>\n        <span>by <small class=\"author\" itemprop=\"author\">J.K. Rowling</small>\n        <a href=\"/author/J-K-Rowling\">(about)</a>\n        </span>\n      ",
     "internal_links": [
       "https://quotes.toscrape.com/",
       "https://quotes.toscrape.com/author/Albert-Einstein",
@@ -67,25 +70,12 @@
     "status": 200,
     "found_on": "https://quotes.toscrape.com/",
     "title": "Quotes to Scrape",
+    "content_type": "text/html; charset=utf-8",
+    "response_time_ms": 389.7,
+    "body_sample": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<title>Quotes to Scrape</title>\n    <link rel=\"stylesheet\" href=\"/static/bootstrap.min.css\">\n    <link rel=\"stylesheet\" href=\"/static/main.css\">\n    \n    \n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"row header-box\">\n            <div class=\"col-md-8\">\n                <h1>\n                    <a href=\"/\" style=\"text-decoration: none\">Quotes to Scrape</a>\n                </h1>\n            </div>\n            <div class=\"col-md-4\">\n                <p>\n                \n                    <a href=\"/login\">Login</a>\n                \n                </p>\n            </div>\n        </div>\n    \n<body>\n    <form action=\"/login\" method=\"post\" accept-charset=\"utf-8\" >\n        <input type=\"hidden\" name=\"csrf_token\" value=\"VrDvhBtkSfZWUeHgdlIpiuRFzyTKNqsObxGnXEmLwACPJoMjYaQc\"/>\n        <div class=\"row\">\n            <div class=\"form-group col-xs-3\">\n                <label for=\"username\">Username</label>\n                <input type=\"text\" class=\"form-control\" id=\"username\" name=\"username\" />\n            </div>\n        </div>\n        <div class=\"row\">\n            <div class=\"form-group col-xs-3\">\n                <label for=\"username\">Password</label>\n                <input type=\"password\" class=\"form-control\" id=\"password\" name=\"password\" />\n            </div>\n        </div>\n        <input type=\"submit\" value=\"Login\" class=\"btn btn-primary\" />\n        \n    </form>\n</body>\n\n    </div>\n    <footer class=\"footer\">\n        <div class=\"container\">\n            <p class=\"text-muted\">\n                Quotes by: <a href=\"https://www.goodreads.com/quotes\">GoodReads.com</a>\n            </p>\n            <p class=\"copyright\">\n                Made with <span class='zyte'>❤</span> by <a class='zyte' href=\"https://www.zyte.com\">Zyte</a>\n            </p>\n        </div>\n    </footer>\n</body>\n</html>",
     "internal_links": [
       "https://quotes.toscrape.com/",
       "https://quotes.toscrape.com/login"
-    ],
-    "external_links": [
-      "https://www.goodreads.com/quotes",
-      "https://www.zyte.com/"
-    ]
-  },
-  "https://quotes.toscrape.com/author/Albert-Einstein": {
-    "url": "https://quotes.toscrape.com/author/Albert-Einstein",
-    "final_url": "http://quotes.toscrape.com/author/Albert-Einstein",
-    "depth": 1,
-    "status": 200,
-    "found_on": "https://quotes.toscrape.com/",
-    "title": "Quotes to Scrape",
-    "internal_links": [
-      "http://quotes.toscrape.com/",
-      "http://quotes.toscrape.com/login"
     ],
     "external_links": [
       "https://www.goodreads.com/quotes",

@@ -214,8 +214,58 @@ python wcag_scan.py path/to/custom_site_map.json
   - `wcag_aaa_status`: `PASS` or `FAIL (N rules)`
   - `overall_compliance`: `WCAG AAA Compliant`, `WCAG AA Compliant`, `WCAG A Compliant`, or `Non-Compliant`
   - `total_violations`, `critical_count`, `serious_count`, `moderate_count`, `minor_count`
+- **`wcag_failing_elements.csv`** *(Developer Remediation List)*:
+  Detailed element-level export directly mapping every failing DOM node, its target selector, HTML snippet, and error message for fast developer fixes.
 - **`wcag_summary.csv`**: Standard violation table with `wcag_level` included.
 - **`wcag_results.json`**: Complete structural JSON containing exact CSS selectors, HTML code snippets, and items needing manual review.
+
+---
+
+## Persistent Database Storage & CSV Downloads (`database.py`)
+
+Inspired by the top open-source web crawlers (**Scrapy**, **PySpider**, **Crawley**, and **Apache Nutch**), all audit runs, page metrics, link graphs, and WCAG violation records are stored in a relational **SQLite database** (`audit_database.db`).
+
+### Key Open-Source Crawler Enhancements Integrated:
+1. **Scrapy & Colly Auto-Throttle & Retry Engine**:
+   - Automatic retries with exponential backoff on HTTP `429` (Too Many Requests), `500`, `502`, `503`, and `504` server errors.
+   - Respects server `Retry-After` headers and measures live page latency in milliseconds (`response_time_ms`).
+2. **Apache Nutch Content Hash Deduplication**:
+   - Generates SHA-256 hashes of page HTML bodies to detect duplicate or mirrored content across different URLs.
+3. **PySpider & Crawley Direct Relational Persistence**:
+   - Real-time ingestion: Every page and violation is written immediately to SQLite so interrupted or long-running crawls never lose data.
+
+### Database Tables:
+- **`crawl_runs`**: High-level run history, timestamps, totals, and overall compliance grades.
+- **`crawled_pages`**: URLs, HTTP status codes, response times, content hashes, depth, and A/AA/AAA pass/fail status.
+- **`page_links`**: Complete directional link graph (source URL -> target URL, internal vs. external).
+- **`wcag_violations`**: Every failing criterion categorized by `WCAG A`, `WCAG AA`, and `WCAG AAA` with impact severities.
+- **`wcag_element_nodes`**: Exact DOM target selectors and failing HTML snippets for developer remediation.
+
+### Database CLI Commands
+
+#### 1. Export Audit Data to Downloadable CSV Files Anytime
+Export the latest audit run to fresh CSV files without re-crawling:
+```bash
+python database.py --export-csv
+```
+*(Or through the crawler: `python crawl_site.py --export-csv`)*
+
+To export a specific historical run:
+```bash
+python database.py --export-csv --run-id run_20261027_194348
+```
+
+#### 2. Display Executive Run Summary
+Get instant terminal compliance metrics for your latest audit:
+```bash
+python database.py --summary
+```
+
+#### 3. View All Historical Audit Runs
+Inspect past audits stored in the database:
+```bash
+python database.py --list-runs
+```
 
 ---
 
